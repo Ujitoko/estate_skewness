@@ -1,0 +1,7 @@
+requests>=2.31
+folium>=0.15
+pandas>=2.1
+geopandas>=0.14
+shapely>=2.0
+branca>=0.7
+python-dotenv>=1.0
