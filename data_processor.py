@@ -6,8 +6,6 @@ import geopandas as gpd
 import pandas as pd
 from shapely.geometry import Point
 
-import config
-
 logger = logging.getLogger(__name__)
 
 # 取引タイプ定義
@@ -101,13 +99,6 @@ class DataProcessor:
 
         df = pd.DataFrame(self._raw_official)
         logger.info("公示価格元件数: %d", len(df))
-
-        # 関東7県フィルタ
-        if "prefecture_code" in df.columns:
-            df["prefecture_code"] = df["prefecture_code"].astype(str)
-            before = len(df)
-            df = df[df["prefecture_code"].isin(config.PREF_CODES)].copy()
-            logger.info("関東フィルタ: %d → %d 件", before, len(df))
 
         # 住宅地のみフィルタ
         if "use_category_name_ja" in df.columns:
