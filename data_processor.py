@@ -177,10 +177,10 @@ class DataProcessor:
         joined = gpd.sjoin(points, boundary_slim, how="left", predicate="within")
         op_stats = (
             joined.groupby("geo_city_code")["official_price"]
-            .agg(["mean", "count"])
+            .agg(["median", "count"])
             .reset_index()
         )
-        op_stats.columns = ["city_code", "op_mean", "op_count"]
+        op_stats.columns = ["city_code", "op_median", "op_count"]
         logger.info("公示統計: %d 市区町村", len(op_stats))
         return op_stats
 
@@ -208,13 +208,17 @@ class DataProcessor:
         result = result.merge(tx_stats, on="city_code", how="left")
         result = result.merge(op_stats, on="city_code", how="left")
 
-        # 乖離率
-        mask = result["op_mean"].notna() & (result["op_mean"] > 0)
+        # 乖離率 (中央値同士で比較)
+        mask = result["op_median"].notna() & (result["op_median"] > 0)
         result.loc[mask, "deviation_pct"] = (
-            (result.loc[mask, "tx_median"] - result.loc[mask, "op_mean"])
-            / result.loc[mask, "op_mean"]
+            (result.loc[mask, "tx_median"] - result.loc[mask, "op_median"])
+            / result.loc[mask, "op_median"]
             * 100
         )
+
+        # 取引件数10以下の自治体は乖離率を無効化
+        few_tx = result["tx_count"].fillna(0) <= 10
+        result.loc[few_tx, "deviation_pct"] = pd.NA
 
         valid = result["deviation_pct"].notna().sum()
         logger.info(
